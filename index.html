@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Enrollment Form</title>
+    <link rel="stylesheet"
+href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+<script
+src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script
+src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <style>
+        body{
+            background-image: url("R12.jpeg"); 
+            background-size: cover; 
+            background-repeat: no-repeat;
+           
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            
+            background-color: rgba(206, 143, 26, 0.301);
+        }
+        form{
+            width:450px;
+            background-color: rgba(255, 255, 255, 0.418);
+            padding:10px;
+            border-radius: 48px;
+            box-shadow: 0 0 10px;
+        
+         
+        }
+        fieldset{
+            border: 10px;
+            padding: 10px;
+            margin: 0%;
+        }
+        legend {
+            font-weight: bold;
+            margin-bottom: 5px;
+            margin-left: 0px;
+        }
+        label{
+           margin-right: 0px;
+          font-style: italic;
+          font-weight: 600;
+        }
+        input{
+            margin-right: 5px;
+        }
+        input[type="text"],
+        input[type="Rollno"],
+        input[type="class"],
+       textarea,
+        input[type="date"]{
+         width : 380px;
+         height: 30px;
+            padding: 6px;
+         size-adjust: 2px;
+            box-sizing: border-box;
+            border: 1.5px solid #1dd6f7;
+        
+            border-radius: 10px;
+        }
+            button[id=Save ],
+            [id=change],
+            [id=reset] 
+            {
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                align-content: center;
+            }
+            marquee{
+                color: rgba(23, 23, 184, 0.947);
+                background-color: rgba(117 255, 0, 0.072);
+                width: 400px;
+                margin-left: 0px;
+                height: 35px;
+            
+                font-style:oblique ;
+
+
+            }
+           
+    </style>
+</head>
+<body>
+   
+    <form method ='get'>
+        <h1>
+      <marquee  direction="left"> Student Enrollment form Using JPDB API</marquee></h1>
+    
+        <fieldset>
+            <legend>
+                <h1>Student  Information</h1>
+            </legend>
+             <label>Enter your Roll no. </label><br>
+             <input type="rollno" id="stdrollno" name="pass"placeholder="xxxxxx" onchange="getRoll()" /> <br><br>
+            <label for="">Enter your Full name</label><br>
+            <input type="text" id="stdname" name="name"placeholder="user" /><br><br>
+
+            <label for="class" >Enter your Class</label><br>
+            <input type="class" id="stdclass" name="class"placeholder="x"/> <br><br>
+            
+           <label>Enter your Date Of Birth</label> <br>
+             <input type="date" id="stddob"
+                    name= "dob"/> <br><br>
+             <label >Enter your Address</label> <br> 
+             <textarea name="address" id="stdaddress" ></textarea> <br><br>
+             
+              <label>Enter your Enrollment Date</label> <br>
+             <input type="date" id="stdenroll"
+                    name= "enrolldate"/> <br><br>
+            <div>
+                    <button type="button" id="save" onclick="saveData()"disabled>
+                       Save </button> 
+               <button type="button" id="change" onclick="changeData()"disabled>
+                   Update </button> 
+                   <button type="button" id="reset" onclick="resetForm()"disabled>
+                    Reset </button> 
+            </div>
+                
+            </fieldset>
+          
+    </form>
+ <script type="text/javascript" src="http://login2explore.com/jbdb/resources/js/0.0.3/jbdb-commons.js"></script>
+ <script type="text/javascript" src="script.js"></script>
+</body>
+</html>
