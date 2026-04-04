@@ -11,8 +11,8 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const DB_NAME = process.env.DB_NAME || 'Std-DB';
+const MONGODBURI = process.env.MONGODBURI || 'mongodb://localhost:27017';
+const DBNAME = process.env.DBNAME || 'Std-DB';
 const COLLECTION_NAME = 'StdData';
 
 let db;
@@ -20,9 +20,9 @@ let studentsCollection;
 
 const connectDB = async () => {
     try {
-        const client = new MongoClient(MONGODB_URI);
+        const client = new MongoClient(MONGODBURI);
         await client.connect();
-        db = client.db(DB_NAME);
+        db = client.db(DBNAME);
         studentsCollection = db.collection(COLLECTION_NAME);
         
         // Create unique index on rollno
@@ -172,7 +172,7 @@ connectDB().then(() => {
     app.listen(PORT, () => {
         console.log(`\n📚 Student Form API Server`);
         console.log(`🚀 Running on: http://localhost:${PORT}`);
-        console.log(`📦 Database: ${DB_NAME}`);
+        console.log(`📦 Database: ${DBNAME}`);
         console.log(`\nEndpoints:`);
         console.log(`  GET    /api/student/:rollno`);
         console.log(`  POST   /api/student`);
