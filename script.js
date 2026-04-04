@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = "http://localhost:3100/api";
+const API_BASE_URL = "https://student-form-dklk.onrender.com/api";
 
 $(document).ready(function () {
     // Check if API is accessible
