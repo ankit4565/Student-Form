@@ -1,38 +1,60 @@
-var jpdbBaseURL = "http://api.login2explore.com:5577";
-var jpdbIRL = "/api/irl";
-var jpdbIML = "/api/iml";
-var stdDBName = "Std-DB";
-var stdRelationName = "StdData";
-var connToken = "90931996|-31949225059414522|90962584";
+// API Configuration
+const API_BASE_URL = "http://localhost:3100/api";
 
 $(document).ready(function () {
+    // Check if API is accessible
+    checkAPIHealth();
     $("#stdrollno").focus();
 });
+
+// Check API health
+async function checkAPIHealth() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/health`);
+        if (!response.ok) {
+            console.warn("API server not running. Start backend with: npm run dev");
+        }
+    } catch (error) {
+        console.warn("Backend API not accessible. Make sure Node server is running on port 3100");
+    }
+}
 
 // Helper function to enable/disable buttons
 function toggleButtons(isSaving) {
     $("#save, #change").prop("disabled", isSaving);
 }
 
-function saveRecNo2LS(jsonObj) {
-    var lvData = JSON.parse(jsonObj.data);
-    localStorage.setItem("recno", lvData.rec_no);
+function saveRecNo2LS(recno) {
+    localStorage.setItem("recno", recno);
 }
 
-function getstdrollnoAsJsonsObj() {
-    var stdrollno = $("#stdrollno").val();
-    return JSON.stringify({ id: stdrollno });
+function getRecNoFromLS() {
+    return localStorage.getItem("recno");
 }
 
-function fillData(jsonObj) {
-    saveRecNo2LS(jsonObj);
-    var record = JSON.parse(jsonObj.data).record;
-    $("#stdrollno").val(record.rollno);
-    $("#stdname").val(record.name);
-    $("#stdclass").val(record.class);
-    $("#stddob").val(record.dob);
-    $("#stdenroll").val(record.enrolldate);
-    $("#stdaddress").val(record.address);
+function fillData(studentData) {
+    // Store MongoDB document ID for updates
+    if (studentData._id || studentData.rec_no) {
+        saveRecNo2LS(studentData._id || studentData.rec_no);
+    }
+    
+    // Fill form with student data
+    $("#stdrollno").val(studentData.rollno || "");
+    $("#stdname").val(studentData.name || "");
+    $("#stdclass").val(studentData.class || "");
+    
+    // Handle date formatting
+    if (studentData.dob) {
+        const dobDate = new Date(studentData.dob);
+        $("#stddob").val(dobDate.toISOString().split('T')[0]);
+    }
+    
+    if (studentData.enrolldate) {
+        const enrollDate = new Date(studentData.enrolldate);
+        $("#stdenroll").val(enrollDate.toISOString().split('T')[0]);
+    }
+    
+    $("#stdaddress").val(studentData.address || "");
 }
 
 function resetForm() {
@@ -57,14 +79,14 @@ function validateData() {
     if (!stdenroll) return showAlert("Student enrollment date is missing");
     if (!stdaddress) return showAlert("Student address is missing");
 
-    return JSON.stringify({
+    return {
         rollno: stdrollno,
         name: stdname,
         class: stdclass,
         dob: stddob,
-        enroll: stdenroll,
+        enrolldate: stdenroll,
         address: stdaddress
-    });
+    };
 }
 
 function showAlert(message) {
@@ -73,24 +95,33 @@ function showAlert(message) {
 }
 
 async function getRoll() {
-    var stdrollnoJsonObj = getstdrollnoAsJsonsObj();
-    var getRequest = createGET_BY_KEYREQUEST(connToken, stdDBName, stdRelationName, stdrollnoJsonObj);
+    var stdrollno = $("#stdrollno").val();
+    
+    if (!stdrollno) {
+        showAlert("Please enter a roll number");
+        return;
+    }
 
     try {
-        let resJsonObj = await executeCommandAtGivenBaseUrl(getRequest, jpdbBaseURL, jpdbIRL);
-        if (resJsonObj.status === 400) {
+        const response = await fetch(`${API_BASE_URL}/student/${stdrollno}`);
+        const resJsonObj = await response.json();
+
+        if (response.status === 404 || resJsonObj.status === 404) {
+            // Student not found, allow new entry
             $("#save, #reset").prop("disabled", false);
             $("#stdname").focus();
-        } else if (resJsonObj.status === 200) {
+        } else if (response.ok && resJsonObj.status === 200) {
+            // Student found, load data
             $("#stdrollno").prop("disabled", true);
-            fillData(resJsonObj);
+            fillData(resJsonObj.data);
             $("#change, #reset").prop("disabled", false);
             $("#stdname").focus();
         } else {
             showAlert("Error fetching data. Please try again.");
         }
     } catch (error) {
-        showAlert("Network error. Please check your connection.");
+        showAlert("Network error. Make sure MongoDB backend is running on port 3100");
+        console.error("Error:", error);
     }
 }
 
@@ -98,42 +129,67 @@ async function saveData() {
     var jsonStrObj = validateData();
     if (!jsonStrObj) return;
 
-    toggleButtons(true);  // Disable buttons during save
-    var putRequest = createPUTRequest(connToken, jsonStrObj, stdDBName, stdRelationName);
+    toggleButtons(true);
 
     try {
-        let resJsonObj = await executeCommandAtGivenBaseUrl(putRequest, jpdbBaseURL, jpdbIML);
-        if (resJsonObj.status === 200) {
+        const response = await fetch(`${API_BASE_URL}/student`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(jsonStrObj)
+        });
+
+        const resJsonObj = await response.json();
+
+        if (response.ok && resJsonObj.status === 200) {
             showAlert("Data saved successfully!");
+            saveRecNo2LS(resJsonObj.rec_no);
         } else {
-            showAlert("Error saving data. Please try again.");
+            showAlert(resJsonObj.message || "Error saving data. Please try again.");
         }
     } catch (error) {
         showAlert("Network error. Please check your connection.");
+        console.error("Error:", error);
     }
 
     resetForm();
-    toggleButtons(false);  // Re-enable buttons after save
+    toggleButtons(false);
 }
 
 async function changeData() {
     var jsonChg = validateData();
     if (!jsonChg) return;
 
-    toggleButtons(true);  // Disable buttons during update
-    var updateRequest = createUPDATERecordRequest(connToken, jsonChg, stdDBName, stdRelationName, localStorage.getItem("recno"));
+    var recno = getRecNoFromLS();
+    if (!recno) {
+        showAlert("No record to update. Please search for a student first.");
+        return;
+    }
+
+    toggleButtons(true);
 
     try {
-        let resJsonObj = await executeCommandAtGivenBaseUrl(updateRequest, jpdbBaseURL, jpdbIML);
-        if (resJsonObj.status === 200) {
+        const response = await fetch(`${API_BASE_URL}/student/${recno}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(jsonChg)
+        });
+
+        const resJsonObj = await response.json();
+
+        if (response.ok && resJsonObj.status === 200) {
             showAlert("Data updated successfully!");
         } else {
-            showAlert("Error updating data. Please try again.");
+            showAlert(resJsonObj.message || "Error updating data. Please try again.");
         }
     } catch (error) {
         showAlert("Network error. Please check your connection.");
+        console.error("Error:", error);
     }
 
     resetForm();
-    toggleButtons(false);  // Re-enable buttons after update
+    toggleButtons(false);
 }
